@@ -1,65 +1,135 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+
+type Task = {
+  id: number;
+  text: string;
+  done: boolean;
+  dueDate: string; // stored as "YYYY-MM-DD", empty string means no date set
+};
+
+// Helper: is a date in the past?
+function isOverdue(dueDate: string, done: boolean): boolean {
+  if (!dueDate || done) return false;
+  return new Date(dueDate) < new Date(new Date().toDateString());
+}
 
 export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [input, setInput] = useState("");
+  const [dueDate, setDueDate] = useState("");
+
+  // Load tasks from localStorage when the page first opens
+  useEffect(() => {
+    const saved = localStorage.getItem("tasks");
+    if (saved) setTasks(JSON.parse(saved));
+  }, []);
+
+  // Save tasks to localStorage every time the list changes
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  function addTask() {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setTasks([...tasks, { id: Date.now(), text: trimmed, done: false, dueDate }]);
+    setInput("");
+    setDueDate("");
+  }
+
+  function toggleTask(id: number) {
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
+  }
+
+  function deleteTask(id: number) {
+    setTasks(tasks.filter((t) => t.id !== id));
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main className="min-h-screen bg-gray-50 flex items-start justify-center pt-20 px-4">
+      <div className="bg-white rounded-2xl shadow-md w-full max-w-md p-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">My To-Do List</h1>
+
+        {/* Input area */}
+        <div className="flex flex-col gap-2 mb-6">
+          <input
+            className="border border-gray-300 rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            type="text"
+            placeholder="Add a new task..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+          />
+          <div className="flex gap-2">
+            {/* Date picker — lets you choose a due date */}
+            <input
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            <button
+              className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+              onClick={addTask}
+            >
+              Add
+            </button>
+          </div>
         </div>
-      </main>
-    </div>
+
+        {/* Task list */}
+        {tasks.length === 0 ? (
+          <p className="text-gray-400 text-center">No tasks yet — add one above!</p>
+        ) : (
+          <ul className="space-y-3">
+            {tasks.map((task) => (
+              <li
+                key={task.id}
+                className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={task.done}
+                  onChange={() => toggleTask(task.id)}
+                  className="w-5 h-5 accent-blue-500 cursor-pointer shrink-0"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className={`text-gray-800 ${task.done ? "line-through text-gray-400" : ""}`}>
+                    {task.text}
+                  </p>
+                  {task.dueDate && (
+                    <p
+                      className={`text-xs mt-0.5 ${
+                        isOverdue(task.dueDate, task.done)
+                          ? "text-red-500 font-semibold"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {isOverdue(task.dueDate, task.done) ? "Overdue · " : "Due · "}
+                      {new Date(task.dueDate + "T00:00:00").toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => deleteTask(task.id)}
+                  className="text-red-400 hover:text-red-600 font-bold text-lg leading-none shrink-0"
+                  aria-label="Delete task"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </main>
   );
 }
