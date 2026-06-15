@@ -50,7 +50,12 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-start justify-center pt-20 px-4">
       <div className="bg-white rounded-2xl shadow-md w-full max-w-md p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">My To-Do List</h1>
+        <div className="flex items-baseline justify-between mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">My To-Do List</h1>
+          <span className="text-sm text-gray-400 font-medium">
+            {tasks.filter((t) => !t.done).length} task{tasks.filter((t) => !t.done).length !== 1 ? "s" : ""} left
+          </span>
+        </div>
 
         {/* Input area */}
         <div className="flex flex-col gap-2 mb-6">
