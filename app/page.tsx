@@ -19,6 +19,7 @@ export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "done">("all");
 
   // Load tasks from localStorage when the page first opens
   useEffect(() => {
@@ -46,6 +47,13 @@ export default function Home() {
   function deleteTask(id: number) {
     setTasks(tasks.filter((t) => t.id !== id));
   }
+
+  // Subset of tasks to display based on the active filter
+  const visibleTasks = tasks.filter((t) => {
+    if (filter === "active") return !t.done;
+    if (filter === "done") return t.done;
+    return true; // "all"
+  });
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-start justify-center pt-20 px-4">
@@ -84,12 +92,31 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Filter buttons */}
+        <div className="flex gap-2 mb-4">
+          {(["all", "active", "done"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`flex-1 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
+                filter === f
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+
         {/* Task list */}
-        {tasks.length === 0 ? (
-          <p className="text-gray-400 text-center">No tasks yet — add one above!</p>
+        {visibleTasks.length === 0 ? (
+          <p className="text-gray-400 text-center">
+            {tasks.length === 0 ? "No tasks yet — add one above!" : "Nothing here."}
+          </p>
         ) : (
           <ul className="space-y-3">
-            {tasks.map((task) => (
+            {visibleTasks.map((task) => (
               <li
                 key={task.id}
                 className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50"
